@@ -1,0 +1,54 @@
+import dendropy
+
+# Given a tree determine taxa list
+# Prune tree to only contain said taxa
+# Run AU tests
+
+# Read Newick format tree file
+def read_newick(filepath):
+    tree = dendropy.Tree.get(path=filepath, schema='newick')
+    return tree
+
+
+# Get taxa list from newick format
+def get_taxa_labels(tree):
+    taxa = tree.taxon_namespace
+    return taxa
+
+
+# Load gene tree
+gene_tree = read_newick("gene_tree.txt")
+gene_tree_taxa = get_taxa_labels(gene_tree)
+print("Gene tree labels")
+print(gene_tree_taxa)
+
+# Load concat tree
+concat_tree = read_newick("concat_tree.txt")
+concat_tree_taxa = get_taxa_labels(concat_tree)
+print("Concat tree labels")
+print(concat_tree_taxa)
+
+# Create a concat copy 'Pruned'
+print("New Pruning Tree")
+pruned_tree = dendropy.Tree(concat_tree)
+pruned_taxa = pruned_tree.taxon_namespace
+print(pruned_tree.as_ascii_plot())
+
+# Determine labels to remove
+gene_tree_taxa_labels = [item.label for item in gene_tree_taxa]
+taxa_to_be_pruned = [item for item in pruned_taxa if item.label not in gene_tree_taxa_labels]
+prune_tree_taxa_labels = [str(item.label) for item in taxa_to_be_pruned]
+print("Labels to remove...")
+print(prune_tree_taxa_labels)
+pruned_tree.prune_taxa_with_labels(prune_tree_taxa_labels) # Prune tree
+
+# Print pruned tree to screen
+print("Pruned Tree:")
+print(get_taxa_labels(pruned_tree))
+print(pruned_tree.as_string(schema='newick'))
+print(pruned_tree.as_ascii_plot())
+
+# Write to file
+pruned_tree.write(path='pruned_tree.nwk', schema='newick')
+
+print("Script Complete")

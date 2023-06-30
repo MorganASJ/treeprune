@@ -1,0 +1,14 @@
+shared_nodes = set()
+for node in concat_tree.postorder_node_iter():
+    if node in gene_tree:
+        shared_nodes.add(node)
+
+pruned_concat_tree = concat_tree_with_taxa(shared_nodes)
+
+print(concat_tree)
+
+
+
+Returns a copy of this tree that only includes leaf nodes if they are associated with the taxon objects listed in taxa. 
+Note that this copy will be a “thin” copy, including just the basic structure (nodes, edges) and minimal attributes 
+(edge lengths, node labels, and taxon associations). Annotations, comments, and other attributes are not copied.
