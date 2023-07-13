@@ -152,6 +152,8 @@ def check_inputs(file_list):
 input_paths = [["gene_data.fas", "z_coi_gene_tree.txt.contree", "concat_tree.txt.contree", "constrained_tree_2.txt.contree"]]
 check_inputs(input_paths)
 
+#Test merge
+
 # This is the name of the .treels file which will contain all the pruned trees (extensions will be added automatically)
 test_names = ["0_all_trees"]
 
