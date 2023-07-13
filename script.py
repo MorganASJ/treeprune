@@ -1,5 +1,5 @@
 import dendropy
-
+import os
 #################
 ### FUNCTIONS ###
 #################
@@ -24,7 +24,6 @@ def read_newick(filepath):
     > filepath : the name of the raw unpruned file containing a newick format tree
     """
     tree = dendropy.Tree.get(path=filepath, schema='newick', preserve_underscores=True)
-    print(f">>> Loaded tree: {filepath}")
     # print("printing tree.as_string from read_newick file:",tree.as_string(schema='newick'))
     # print(tree.as_ascii_plot())
     return tree
@@ -48,7 +47,7 @@ def find_common_taxa(taxa_sets):
 
     # Convert the set back to a list
     unique_items_list = list(unique_items)
-    print(">>> Number of common taxa:",len(unique_items_list))
+    print("Number of common taxa:",len(unique_items_list), "\n")
     return unique_items_list
 
 
@@ -78,8 +77,6 @@ def find_pruned_trees(treefiles):
             alignment_file = f
             treefiles.remove(f)
 
-    #treefiles.pop(0) # remove it from the treefiles list
-
     for filepath in treefiles:
         tree = read_newick(filepath)
         tree_labels[filepath] = get_labels_from_tree(tree)
@@ -100,11 +97,11 @@ def find_pruned_trees(treefiles):
         pruned_trees[filepath].prune_taxa_with_labels(taxa_to_be_pruned)
 
         # Save copy to file
-        pruned_trees[filepath].write(path= "0PRUNED_" + filepath + ".tre", schema='newick')
-        print(">>> Pruned " + filepath)
+        pruned_trees[filepath].write(path= "0PRUNED_" + filepath + ".pruned.tre", schema='newick')
+        print("Pruned tree: " + filepath)
 
     # Prune the alignment
-    print(">>> Generating alignment file")
+    print("\nGenerating alignment file")
     pruned_alignment = ""
     with open(alignment_file, "r") as f:  
         for line in f:
@@ -119,10 +116,10 @@ def find_pruned_trees(treefiles):
             elif label:
                 pruned_alignment += "\n" + line
 
-    with open(alignment_file + "_pruned.fas", "w") as f:
+    with open("0PRUNED_" + alignment_file + ".pruned.fas", "w") as f:
         f.write(pruned_alignment)
 
-    print(">>> Pruned concat dataset alignment file")
+    print("Pruned alignment:", alignment_file)
 
     return pruned_trees
 
@@ -137,31 +134,87 @@ def check_inputs(file_list):
     fas_files = []
     for f in file_list:
         for i in f:
-            print(i)
             if i.endswith(".fas"):
                 count += 1
                 fas_files.append(i)
     if count > 1:
         raise ValueError(f"We can only have one '.fas' file, but you have submitted {count}: {fas_files}")
+    else:
+        print("Files have been accepted. Script will now continue. \n")
+    
+
+def get_files(tree_extension):
+    """
+    Retrieves all files which can be used in analysis from the directory
+    this script was run from
+
+    > tree_extension : string containing the file type for the newick trees (".contree" for consensus", .treefile" for ML )
+    
+    """
+    inputs = []
+    input_path = []
+    list_of_files = os.listdir()
+
+    for f in list_of_files:
+        if f.endswith(".fas") or f.endswith(tree_extension): # may have to change the contree ending
+            inputs.append(f)
+    inputs = sorted(inputs) # sort alphatbeticall to always have the same order
+    
+    inputs = [item for item in inputs if "PRUNED" not in item]
+            
+    input_path.append(inputs)
+    print("The following files have been found:\n", ">>>", input_path)
+    return input_path
+
+
+def write_log(name_of_log, tree_files, alignment_files):
+
+    with open(name_of_log, 'w') as file:
+        file.write("Order of treefiles pruned, order for AU test:")
+        for f in tree_files:
+            file.write(f)
+            file.write("\n")
+        
+        file.write("Alginment pruned:")
+        file.write(alignment_files[0])
+        file.write("\n")
+    print("Written to: ", name_of_log)
+
+
 
 ##############
 ### SCRIPT ###
 ##############
 
 # List all the files being looked at
-input_paths = [["gene_data.fas", "z_coi_gene_tree.txt.contree", "concat_tree.txt.contree", "constrained_tree_2.txt.contree"]]
+# input_paths = [["gene_data.fas", "z_coi_gene_tree.txt.contree", "2_concat_tree.txt.contree", "1_constrained_tree_2.txt.contree"]]
+# check_inputs(input_paths)
+# print(input_paths)
+
+# Automatically locate the files in path
+input_paths = get_files(".contree")
+print("input paths: -------- ", input_paths)
+alignment_paths = []
+tree_paths = []
+for f in input_paths:
+        for i in f:
+            if i.endswith(".fas"):
+                alignment_paths.append(i)
+            if i.endswith(".contree"): #CHANGE TO SUIT
+                tree_paths.append(i)
+
 check_inputs(input_paths)
 
-#Test merge
 
 # This is the name of the .treels file which will contain all the pruned trees (extensions will be added automatically)
-test_names = ["0_all_trees"]
+test_names = ["all_trees"]
 
 for i in range(len(input_paths)):
-    with open(test_names[i] + "_pruned.treels", 'w') as f:
-
-        print(">>> Finding Pruned Trees for: " + str(", ".join(input_paths[i])), "\n")
+    with open(test_names[i] + ".pruned.treels", 'w') as f:
         pruned_trees = find_pruned_trees(input_paths[i])
         f.write(concat_trees(pruned_trees))
 
-print(">>>> Script complete <<<")
+
+write_log("LOGNAME.log",tree_paths, alignment_paths)
+
+print("\n>>>> Script complete <<<\n")
